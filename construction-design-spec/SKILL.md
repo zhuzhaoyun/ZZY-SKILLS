@@ -3,10 +3,7 @@ name: construction-design-spec
 description: |
   生成完整的建筑施工设计说明、建筑设计说明或施工图设计说明，适用于需要根据项目资料抽取信息、裁剪目录并逐章成稿的长流程任务。用户提到“生成整本设计说明”“根据任务书/方案/审图意见整理完整建筑说明”“输出完整建筑工程设计说明”时应使用本技能。若只需润色、翻译、补单章、补小节或回答单条规范问题，则不使用本技能。
 compatibility: |
-  需要 Bash 运行随附 Python 脚本。知识库检索可使用：
-  - RAGFLOW_API_KEY
-  - RAGFLOW_BASE_URL
-  - RAGFLOW_DATASET_IDS
+  需要 Bash 运行随附 Python 脚本
 ---
 
 # 建筑施工设计说明文档生成
@@ -91,17 +88,11 @@ SCRIPT_ARGS='{"template":"./assets/public_building_template.md"}' python ./scrip
 
 ## Step 3: 逐章生成
 
-每一章都按 **plan -> retrieve -> draft -> validate** 执行。
+**每章必须独立执行完整流程，不得在所有章节规划完后再批量检索。**
 
-### 3.1 提取章节模板
+每章都按 **plan -> retrieve -> draft -> validate** 执行。
 
-```bash
-SCRIPT_ARGS='{"template":"./assets/public_building_template.md","chapter":"第1章 设计依据"}' python ./scripts/extract_chapter.py
-```
-
-脚本 stdout 即 `chapter_template`。
-
-### 3.2 列 `chapter_plan.json`
+### 3.1 列 `chapter_plan.json`
 
 ```json
 {
@@ -115,37 +106,38 @@ SCRIPT_ARGS='{"template":"./assets/public_building_template.md","chapter":"第1�
 
 只需要说明四件事：这章要不要写、要写什么、缺什么、要问什么。
 
-### 3.3 检索证据
+### 3.2 检索证据
 
-根据 `project_info.json`、`chapter_template`、`chapter_plan.json` 生成几条自然语言问题，再交给 RAGFlow。
+**先 plan 本章，再立刻检索本章，不得跨章节攒问题一起查。**
 
-示例：
+根据 `project_info.json`、`chapter_plan.json` 和当前章节的模板内容生成检索问题，再交给 RAGFlow。
+
+示例（以”第1章 设计依据”为例）：
 
 ```json
 {
-  "retrieval_questions": [
-    "对于广州体育馆项目，本章通常应列出哪些现行建筑设计依据、专项规范和地方要求？",
-    "钢结构加网架屋盖的体育建筑，本章还要补哪些专项规范？",
-    "本章哪些地方性要求需要人工核验？"
+  “retrieval_questions”: [
+    “杭州地区公共建筑施工图设计依据有哪些现行国家和地方规范？”,
+    “本章哪些地方性要求需要人工核验？”
   ]
 }
 ```
 
 ```bash
-SCRIPT_ARGS='{"query":"对于广州体育馆项目，本章通常应列出哪些现行建筑设计依据、专项规范和地方要求？","dataset_ids":["your_dataset_id"],"top_k":5,"similarity_threshold":0.1}' python ./scripts/ragflow_query.py
+SCRIPT_ARGS='{“query”:”杭州地区公共建筑施工图设计依据有哪些现行国家和地方规范？地方规范审查口径有哪些需要核验？”,”dataset_ids”:[“ea831630cec611f0bff20242c0a82002”,”bb0f0205032f11f1a1d10242c0a83002”],”top_k”:5,”similarity_threshold”:0.1}' python ./scripts/ragflow_query.py
 ```
 
 检索规则：
 
-- 问题要绑定当前项目和当前章节。
-- 先查“该写什么、依据是什么、哪些要核验”。
-- 结果不够就继续追问，不要直接开写。
-- 优先使用 `SCRIPT_ARGS.dataset_ids`，未传入时回退到 `RAGFLOW_DATASET_IDS`。
+- **per-chapter**：本章的 `retrieval_questions` 查完、本章正文 draft 完成、自检通过后，再开始下一章的 plan。
+- 问题要绑定当前项目地点和当前章节主题，不要问跨章的笼统问题。
+- 先查”该写什么、依据是什么、哪些要核验”，结果不够再追加查询，每次追加都记录。
+- `dataset_ids` 固定传入 `[“ea831630cec611f0bff20242c0a82002”,”bb0f0205032f11f1a1d10242c0a83002”]`（案例库和强条规范库）。
 - 知识库不可用时，只能输出通用框架和待核验项。
 
-### 3.4 生成正文
+### 3.3 生成正文
 
-结合 `chapter_template`、`project_info.json`、`chapter_plan.json` 和检索结果生成正文：
+结合模板中的章节内容、`project_info.json`、`chapter_plan.json` 和检索结果生成正文：
 
 - 不输出 `XX`、`XXX`
 - 可合理补充但并非原文给出的内容标记 `[推理补充]`
@@ -153,7 +145,7 @@ SCRIPT_ARGS='{"query":"对于广州体育馆项目，本章通常应列出哪些
 - 未核实的地方规范或审查口径标记 `[需人工核验]`
 - 删除模板中的提示语、示例城市、样例项目名、样例值
 
-### 3.5 章节自检
+### 3.4 章节自检
 
 按 `references/validation_checklist.md` 自检：
 
@@ -163,7 +155,7 @@ SCRIPT_ARGS='{"query":"对于广州体育馆项目，本章通常应列出哪些
 - 章节结论与项目基本信息一致
 - 没有在缺乏依据时写出地方性结论
 
-### 3.6 追加到最终文档
+### 3.5 追加到最终文档
 
 单章完成后保留：
 
@@ -203,7 +195,6 @@ SCRIPT_ARGS='{"query":"对于广州体育馆项目，本章通常应列出哪些
 优先执行：
 
 - `scripts/extract_toc.py`
-- `scripts/extract_chapter.py`
 - `scripts/ragflow_query.py`
 
 ## 常见错误
@@ -215,3 +206,4 @@ SCRIPT_ARGS='{"query":"对于广州体育馆项目，本章通常应列出哪些
 | 没有知识库还直接写地方规范结论 | 只输出通用框架，并标记 `[需人工核验]` |
 | 输出残留样例城市、样例项目名、模板提示语 | 每章生成后立即自检清洗 |
 | 一次性并行生成多章 | 严格按章节顺序生成 |
+| 攒完所有章节 plan 再批量检索 | 本章 plan → 本章检索 → 本章正文 → 自检 → 下一章 |

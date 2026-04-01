@@ -24,7 +24,38 @@ import sys
 from typing import Any
 
 
+def _load_env_if_missing():
+    """若环境变量未设置，尝试从 .env 文件加载（支持 shell 和 JSON 格式）。"""
+    required = ["RAGFLOW_API_KEY", "RAGFLOW_BASE_URL", "RAGFLOW_DATASET_IDS"]
+    if all(os.environ.get(k) for k in required):
+        return
+    # .env 位于 scripts 目录（与脚本同目录）
+    env_path = os.path.join(os.path.dirname(__file__), ".env")
+    if not os.path.exists(env_path):
+        return
+    with open(env_path) as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" in line:
+                key, val = line.split("=", 1)
+                key = key.strip()
+                val = val.strip().strip('"').strip("'")
+                if key == "RAGFLOW_DATASET_IDS":
+                    # 可能是 JSON 数组或逗号分隔
+                    try:
+                        parsed = json.loads(val)
+                        if isinstance(parsed, list):
+                            val = ",".join(parsed)
+                    except Exception:
+                        pass
+                if key.startswith("RAGFLOW_") and key not in os.environ:
+                    os.environ[key] = val
+
+
 def get_env(key: str, default: str = "") -> str:
+    _load_env_if_missing()
     return os.environ.get(key, default)
 
 

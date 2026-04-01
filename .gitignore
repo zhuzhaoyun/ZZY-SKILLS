@@ -1,3 +1,4 @@
 docs/技能创作最佳实践-Claude-API-Docs.md
 *.pyc
 .env
+construction-design-spec-workspace/*
