@@ -4,7 +4,7 @@ RAGFlow 知识库查询脚本
 
 通过 RAGFlow REST API 查询知识库，返回检索结果。
 
-环境变量（可选）:
+环境变量（由 harness 注入）:
     RAGFLOW_API_KEY      - API 密钥
     RAGFLOW_BASE_URL     - RAGFlow 服务地址（默认: https://rag.aizzyun.com）
     RAGFLOW_DATASET_IDS  - 知识库 ID，多个用逗号分隔
@@ -35,6 +35,14 @@ def get_dataset_ids(parsed: dict[str, Any]) -> list[str]:
 
     env_ids = get_env("RAGFLOW_DATASET_IDS", "")
     if env_ids:
+        # 优先尝试 JSON 数组解析
+        try:
+            parsed_ids = json.loads(env_ids)
+            if isinstance(parsed_ids, list):
+                return [str(item).strip() for item in parsed_ids if str(item).strip()]
+        except Exception:
+            pass
+        # 降级为逗号分隔
         return [item.strip() for item in env_ids.split(",") if item.strip()]
 
     return []
@@ -70,23 +78,33 @@ def ragflow_query(
         "Content-Type": "application/json",
     }
 
+    # 分页获取所有知识库，查找目标 ID
     try:
         import urllib.request
 
-        req = urllib.request.Request(datasets_url, headers=headers, method="GET")
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            datasets_data = json.loads(resp.read().decode("utf-8"))
+        valid_ids = []
+        page = 1
+        while True:
+            req = urllib.request.Request(
+                f"{datasets_url}?page={page}", headers=headers, method="GET"
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                datasets_data = json.loads(resp.read().decode("utf-8"))
+
+            for ds in datasets_data.get("data", []):
+                if ds.get("id") in dataset_ids:
+                    valid_ids.append(ds.get("id"))
+
+            # 判断是否还有下一页：返回数量 < 30 则已到最后一页
+            if len(datasets_data.get("data", [])) < 30:
+                break
+            page += 1
     except Exception as e:
         return {
             "success": False,
             "error": f"连接 RAGFlow 失败: {str(e)}",
             "fallback": True,
         }
-
-    valid_ids = []
-    for ds in datasets_data.get("data", []):
-        if ds.get("id") in dataset_ids:
-            valid_ids.append(ds.get("id"))
 
     if not valid_ids:
         return {
