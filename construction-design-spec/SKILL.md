@@ -65,13 +65,13 @@ Step 4: 整文校验与交付
 先提取模板目录：
 
 ```bash
-python ./scripts/extract_toc.py ./references/public_building_template.md
+python ./scripts/extract_toc.py ./assets/public_building_template.md
 ```
 
 或：
 
 ```bash
-SCRIPT_ARGS='{"template":"./references/public_building_template.md"}' python ./scripts/extract_toc.py
+SCRIPT_ARGS='{"template":"./assets/public_building_template.md"}' python ./scripts/extract_toc.py
 ```
 
 然后输出 `outline_decision.md`，列出：
@@ -96,7 +96,7 @@ SCRIPT_ARGS='{"template":"./references/public_building_template.md"}' python ./s
 ### 3.1 提取章节模板
 
 ```bash
-SCRIPT_ARGS='{"template":"./references/public_building_template.md","chapter":"第1章 设计依据"}' python ./scripts/extract_chapter.py
+SCRIPT_ARGS='{"template":"./assets/public_building_template.md","chapter":"第1章 设计依据"}' python ./scripts/extract_chapter.py
 ```
 
 脚本 stdout 即 `chapter_template`。
@@ -198,7 +198,7 @@ SCRIPT_ARGS='{"query":"对于广州体育馆项目，本章通常应列出哪些
 
 - `references/project_info.md`
 - `references/validation_checklist.md`
-- `references/public_building_template.md`
+- `assets/public_building_template.md`
 
 优先执行：
 

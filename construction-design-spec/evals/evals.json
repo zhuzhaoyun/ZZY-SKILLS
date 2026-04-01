@@ -1,5 +1,5 @@
 {
-  "skill_name": "construction-design",
+  "skill_name": "construction-design-spec",
   "description": "建筑施工设计说明文档生成 skill 的测试集",
   "evals": [
     {
