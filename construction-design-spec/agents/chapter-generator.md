@@ -57,7 +57,7 @@ SCRIPT_ARGS='{"query":"新拓展问题","top_k":5,"similarity_threshold":0.1}' p
 
 **重复 2.3～2.4**：最多执行 3 次 RAGFlow 调用（3 次检索），每次检索都要保存结果到 retrieval.json，每次都要评估是否足够。
 
-> **注意**：最多 3 次检索是上限，不是目标。如果 3 次检索后仍未获得足够依据，生成章节时须注明"本章节依据有限，建议补充检索当地规范"。
+> **注意**：最多 3 次检索是上限，不是目标。如果 3 次检索后检索到的依据仍然薄弱（如仅返回 1～2 条相关结果），应在章节中标注"本章节依据有限，建议补充检索当地规范"，但不得伪造不存在的规范条文。
 
 Save retrieval results to `{output_dir}/chapters/{sanitized_name}/retrieval.json`
 > retrieval.json 必须包含完整的检索轮次记录，包括每次 query 和对应的 evidence，以便追溯是否真正执行了多次检索。

@@ -243,7 +243,7 @@ def main():
 
     if result.get("fallback"):
         print(f"[INFO] RAGFlow 不可用: {result['error']}")
-        print("[INFO] 仅可输出通用框架；涉及地方规范、审查口径或强制性结论时请标记 [需人工核验]")
+        print("[INFO] RAGFlow 检索是强制前置条件，无法生成章节。请检查知识库服务状态后重试。")
         return
 
     print(f"Error: {result.get('error', 'Unknown error')}")
