@@ -19,20 +19,25 @@ You receive these parameters:
 
 ### Step 1: Extract Template Chapter
 
-Extract the full template content for this chapter:
-
+**首先创建本章工作目录**：
 ```bash
-python scripts/extract_chapter.py "${chapter_name}"
+mkdir -p {output_dir}/chapters/{sanitized_name}/
 ```
 
-Save the extracted content to `{output_dir}/template_chapter_{sanitized_name}.txt`
-> 使用 chapter_name 清理特殊字符后作为文件名后缀（如 `21` 从 `21.节能设计` 提取）
+Extract the full template content for this chapter:
+```bash
+SCRIPT_ARGS='{"chapter":"${chapter_name}","template":"./assets/public_building_template.md"}' python scripts/extract_chapter.py
+```
+
+Save the extracted content to `{output_dir}/chapters/{sanitized_name}/template_chapter.txt`
 
 ### Step 2: Plan & Retrieve (Iterative)
 
 **RAGFlow 检索是强制步骤，不可跳过。检索失败即中断生成，提示用户企业知识库不可用。**
 
-2.1 **生成初始检索问题**：基于项目信息 + 模板章节内容，生成检索问题列表（覆盖本章要点）。
+2.1 **生成初始检索问题**：读取 Step 1 提取的 `template_chapter.txt`，分析本章涉及的具体要点（如本章讲节能就要问围护结构/窗墙比/保温材料，讲消防就要问防火分区/疏散距离），再结合项目信息（地点、气候、结构类型），生成 **3～5 个针对本章的专项检索问题**。
+
+> **常见错误**：用"建筑设计规范 体育建筑"通用查询代替本章检索问题，导致所有章节检索结果相同。每个章节的检索 query 必须不同。
 
 2.2 **首次检索**：所有问题一起查询 RAGFlow：
 ```bash
@@ -45,11 +50,17 @@ SCRIPT_ARGS='{"query":"问题1 || 问题2 || 问题3","top_k":5,"similarity_thre
 - 如缺少当地规范、审查要点、专项要求 → 生成拓展问题 → 追加检索
 - 如无新信息或已足够 → 进入 Step 3
 
-2.4 **重复 2.3** 直到：连续两次检索无新信息 OR 确认所有要点已覆盖 OR **已达3次检索上限**
+2.4 **追加检索（如需要）**：如果 2.3 评估发现依据不足，用新的拓展问题再次调用 RAGFlow：
+```bash
+SCRIPT_ARGS='{"query":"新拓展问题","top_k":5,"similarity_threshold":0.1}' python scripts/ragflow_query.py
+```
+
+**重复 2.3～2.4**：最多执行 3 次 RAGFlow 调用（3 次检索），每次检索都要保存结果到 retrieval.json，每次都要评估是否足够。
 
 > **注意**：最多 3 次检索是上限，不是目标。如果 3 次检索后仍未获得足够依据，生成章节时须注明"本章节依据有限，建议补充检索当地规范"。
 
-Save retrieval results to `{output_dir}/retrieval_{sanitized_name}.json`
+Save retrieval results to `{output_dir}/chapters/{sanitized_name}/retrieval.json`
+> retrieval.json 必须包含完整的检索轮次记录，包括每次 query 和对应的 evidence，以便追溯是否真正执行了多次检索。
 
 Also save a brief plan summary to `{output_dir}/chapter_plan_{sanitized_name}.json`:
 ```json
@@ -72,7 +83,7 @@ Generate the chapter content based on:
 - 不输出 `XX`、`XXX`，所有占位符均须用项目信息推理填充
 - 删除模板中的提示语、示例城市、样例项目名、样例值
 
-Save draft to `{output_dir}/chapter_draft_{sanitized_name}.md`
+Save draft to `{output_dir}/chapters/{sanitized_name}/chapter_draft.md`
 
 ### Step 4: Validate Chapter
 
@@ -87,6 +98,8 @@ If validation fails, revise the draft.
 ### Step 5: Append to Final Document
 
 After validation passes, append the chapter to the final document at `{final_doc_path}`.
+
+**Append 格式**：在文件末尾添加新章节，内容为 `chapter_result.md` 的完整内容。
 
 ## Outputs
 

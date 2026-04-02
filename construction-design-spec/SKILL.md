@@ -39,12 +39,30 @@ Step 4: 整文校验与交付
 
 ## Step 1: 项目信息提取
 
-读取 `references/project_info.md`，根据项目概要、任务书、方案文本、审图意见、地方要求等资料提取 `project_info.json`。
+读取 `references/project_info.md` 中的提示词模板，结合项目概要、任务书、方案文本、审图意见、地方要求等资料，提取 `project_info.json`。
+
+**`project_info.json` 格式示例**（实际使用时参考 `references/project_info.md` 中的完整 schema）：
+
+```json
+{
+  "项目名称": "xxx",
+  "建设地点": "xxx",
+  "建筑面积": "xxx m²",
+  "层数": "地上x层/地下x层",
+  "建筑高度": "xxx m",
+  "结构形式": "框架结构",
+  "气候分区": "严寒/寒冷/夏热冬冷/夏热冬暖",
+  "是否人防": "是/否",
+  "是否绿建": "是/否",
+  "是否装配式": "是/否",
+  ...
+}
+```
 
 提取规则：
 
 - 原文明确给出的参数直接提取。
-- 涉及地方规范、审查口径、强条适用性的内容，如有依据则写，无依据则参考类似项目写法或合理推断，不要留任何占位符标记。
+- 涉及地方规范、审查口径、强条适用性的内容，如有依据则写，无依据则参考类似项目写法或合理推断，推理结果标注 `[推理补充]`，不要留任何占位符标记。
 - 所有数值保留单位。
 
 进入 Step 2 前至少确认：
@@ -76,6 +94,14 @@ SCRIPT_ARGS='{"template":"./assets/public_building_template.md"}' python ./scrip
 - 删除章节及原因
 - 需人工核验的地区性或专项章节
 
+**用户确认目录示例**：
+> 请确认以下大纲是否适用本项目：
+> - 保留章节：1.工程概况、2.设计依据、...（完整列表）
+> - 删除章节：XX专项（原因：项目中不涉及）
+> - 待核验：人防设计（需确认当地人防审批要求）
+>
+> 确认后我将开始逐章生成。
+
 裁剪规则：
 
 - 通用章节通常保留。
@@ -83,19 +109,31 @@ SCRIPT_ARGS='{"template":"./assets/public_building_template.md"}' python ./scrip
 - 模板中的城市样例、地方审查要点只能参考；不适用时替换为本项目要求或合理推断，不要留占位符标记。
 - 模板提示语不得进入最终正文。
 
-用户确认目录后，再进入 Step 3。
+**用户确认目录后，再进入 Step 3。**
 
 ## Step 3: 逐章生成
 
 **每章必须独立执行完整流程，不得在所有章节规划完后再批量检索。RAGFlow 检索是强制步骤，不可跳过或伪造。**
 
-使用 `chapter-generator` subagent 生成每章内容：
+从 `outline_decision.md` 的"保留章节"列表中，依次取出每一章，**对每一章分别 spawn 一个 chapter-generator subagent**。
 
-**Spawn chapter-generator subagent for each chapter** (详见 `agents/chapter-generator.md`)：
+**读取章节列表的方法**：读取 `outline_decision.md`，找到"保留章节"部分，提取所有章节名称（每行一个，去掉前缀空白）。
 
-- 输入：chapter_name, project_info_path, output_dir, final_doc_path
-- 输出：最终文档 `建筑施工设计说明_{项目名称}.md`（subagent 已处理所有步骤）
-- **RAGFlow 检索失败 = 本章生成中断，提示用户企业知识库不可用**
+Spawn 参数：
+- **chapter_name**：outline 中保留章节的完整名称（如 `21.节能设计`）
+- **project_info_path**：`project_info.json` 的绝对路径
+- **output_dir**：子代理的工作目录，subagent 会在其下创建 `chapters/{sanitized_name}/` 目录
+- **final_doc_path**：最终文档的绝对路径（所有章节 append 到同一文件）
+
+Spawn 示例：
+```
+for chapter in ["1.工程概况", "2.设计依据", "21.节能设计", ...]:
+    spawn chapter-generator(chapter_name=chapter, project_info_path, output_dir, final_doc_path)
+```
+
+详见 `agents/chapter-generator.md`。
+
+**RAGFlow 检索失败 = 本章生成中断，提示用户企业知识库不可用。不得伪造检索结果。**
 
 ## Step 4: 整文校验与交付
 
@@ -116,11 +154,11 @@ SCRIPT_ARGS='{"template":"./assets/public_building_template.md"}' python ./scrip
 - `references/validation_checklist.md`
 - `assets/public_building_template.md`
 
-优先执行：
+优先执行（按顺序）：
 
-- `scripts/extract_toc.py`
-- `scripts/extract_chapter.py`
-- `scripts/ragflow_query.py`
+- `scripts/extract_toc.py` — Step 2 提取模板目录
+- `scripts/extract_chapter.py` — chapter-generator 在生成每章时提取模板内容
+- `scripts/ragflow_query.py` — chapter-generator 在生成每章时检索知识库
 
 ## 常见错误
 
