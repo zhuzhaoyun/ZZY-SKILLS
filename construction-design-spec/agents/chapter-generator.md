@@ -12,8 +12,8 @@ You receive these parameters:
 
 - **chapter_name**: The chapter to generate (e.g., "21.节能设计")
 - **project_info_path**: Path to `project_info.json` with project context
-- **output_dir**: Directory to write outputs
-- **final_doc_path**: Path to append the completed chapter
+- **output_dir**: Directory to write outputs, typically `./output/{项目名称}/`. Subagent will create `chapters/{sanitized_name}/` under this path.
+- **final_doc_path**: Path to append the completed chapter, typically `./output/{项目名称}/建筑施工设计说明_{项目名称}.md`
 
 ## Process
 
@@ -31,6 +31,8 @@ SCRIPT_ARGS='{"chapter":"${chapter_name}","template":"./assets/public_building_t
 
 Save the extracted content to `{output_dir}/chapters/{sanitized_name}/template_chapter.txt`
 
+> **兜底逻辑**：如果 `extract_chapter.py` 返回 `[错误] 未找到章节`，说明模板中无此章节。此时从零起草：根据章节名称推理本章应包含的核心要点（如"碳排放"需包含计算方法、减排措施、可再生能源利用），参考 `project_info.json` 和 RAGFlow 检索结果生成内容，不中断流程。
+
 ### Step 2: Plan & Retrieve (Iterative)
 
 **RAGFlow 检索是强制步骤，不可跳过。检索失败即中断生成，提示用户企业知识库不可用。**
@@ -41,18 +43,23 @@ Save the extracted content to `{output_dir}/chapters/{sanitized_name}/template_c
 
 2.2 **首次检索**：所有问题一起查询 RAGFlow：
 ```bash
-SCRIPT_ARGS='{"query":"问题1 || 问题2 || 问题3","top_k":5,"similarity_threshold":0.1}' python scripts/ragflow_query.py
+SCRIPT_ARGS='{"query":"问题1 || 问题2 || 问题3","top_k":5,"similarity_threshold":0.3}' python scripts/ragflow_query.py
 ```
 **如果 RAGFlow 调用失败（网络错误、超时、无响应），立即停止本章生成，向用户报告：**
 > "企业知识库（RAGFlow）暂时不可用，无法生成含规范依据的章节内容。请稍后重试，或联系管理员确认知识库服务状态。"
 
 2.3 **评估检索结果**：读取检索结果，判断是否足够生成章节。
-- 如缺少当地规范、审查要点、专项要求 → 生成拓展问题 → 追加检索
-- 如无新信息或已足够 → 进入 Step 3
+
+> **每章必须覆盖以下两个共性要素才算"检索足够"**：
+> 1. **规范/依据**：是否引用了与本章相关的国家/地方规范、标准条文或审查口径
+> 2. **本项目参数/做法**：是否给出了针对本项目条件的具体参数或技术做法
+>
+> 2 项齐全 → 进入 Step 3
+> 缺任一要素 → 生成拓展问题 → 追加检索
 
 2.4 **追加检索（如需要）**：如果 2.3 评估发现依据不足，用新的拓展问题再次调用 RAGFlow：
 ```bash
-SCRIPT_ARGS='{"query":"新拓展问题","top_k":5,"similarity_threshold":0.1}' python scripts/ragflow_query.py
+SCRIPT_ARGS='{"query":"新拓展问题","top_k":5,"similarity_threshold":0.3}' python scripts/ragflow_query.py
 ```
 
 **重复 2.3～2.4**：最多执行 3 次 RAGFlow 调用（3 次检索），每次检索都要保存结果到 retrieval.json，每次都要评估是否足够。
