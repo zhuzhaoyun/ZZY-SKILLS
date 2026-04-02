@@ -14,7 +14,7 @@ SCRIPT_ARGS (JSON):
         "query": "查询文本",
         "dataset_ids": ["dataset_id_1", "dataset_id_2"],
         "top_k": 5,
-        "similarity_threshold": 0.1
+        "similarity_threshold": 0.3
     }
 """
 
@@ -83,7 +83,7 @@ def ragflow_query(
     query: str,
     dataset_ids: list[str],
     top_k: int = 5,
-    similarity_threshold: float = 0.1,
+    similarity_threshold: float = 0.3,
 ) -> dict[str, Any]:
     """调用 RAGFlow API 查询知识库。"""
     api_key = get_env("RAGFLOW_API_KEY")
