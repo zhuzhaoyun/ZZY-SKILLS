@@ -242,9 +242,9 @@ def main():
         return
 
     if result.get("fallback"):
-        print(f"[INFO] RAGFlow 不可用: {result['error']}")
-        print("[INFO] RAGFlow 检索是强制前置条件，无法生成章节。请检查知识库服务状态后重试。")
-        return
+        print(f"[ERROR] RAGFlow 不可用: {result['error']}")
+        print("[ERROR] RAGFlow 检索是强制前置条件，请检查知识库配置后重试。")
+        sys.exit(1)
 
     print(f"Error: {result.get('error', 'Unknown error')}")
     sys.exit(1)

@@ -33,8 +33,10 @@ def extract_chapter(chapter_name: str, template_path: str) -> str:
     chapter_title = None
 
     # 提取搜索关键词（去掉可能的冒号和前缀）
-    # 用户可能输入 "21.节能设计" 或 "节能设计"，统一处理
-    search_keywords = chapter_name.split('：')[0].split(':')[0].strip()
+    # 用户可能输入 "21.节能设计"、"21.节能设计：" 或 "节能设计"，统一处理
+    search_keywords = chapter_name.strip()
+    # 去掉首尾的中文冒号、英文冒号
+    search_keywords = search_keywords.rstrip('：:').lstrip('：:')
     # 如果输入包含数字.前缀，去掉它
     if re.match(r'^\d+\.', search_keywords):
         search_keywords = re.sub(r'^\d+\.', '', search_keywords)
@@ -54,7 +56,17 @@ def extract_chapter(chapter_name: str, template_path: str) -> str:
                     break
 
     if start_idx is None:
-        return f"[错误] 未找到章节: {chapter_name}"
+        # 列出可用章节，方便排查
+        available = []
+        for line in lines:
+            stripped = line.strip()
+            match = re.match(r'^#\s+(\d+\..+?)\s*[:：]?\s*$', stripped)
+            if match:
+                available.append(match.group(1))
+        msg = f"[错误] 未找到章节: {chapter_name}"
+        if available:
+            msg += f"\n可用章节: {', '.join(available)}"
+        return msg
 
     # 找到下一个顶级章节（以 # [数字]. 开头）
     end_idx = len(lines)
