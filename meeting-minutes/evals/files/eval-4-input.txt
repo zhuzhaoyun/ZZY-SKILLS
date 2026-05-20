@@ -1,0 +1,25 @@
+Alright let's get started. Today we have three things on the agenda: the Q2 launch timeline, the budget reallocation for marketing, and the new hire onboarding process.
+
+First, Q2 launch. Sarah, where are we on the mobile app? 
+
+Sarah: So the iOS build is basically done, QA found a few minor UI bugs but nothing blocking. Android is behind — the push notification integration with Firebase is taking longer than expected. I'd say we need another week, maybe two.
+
+OK, can we commit to May 30th?
+
+Sarah: I'll push the team but no promises. I'll update you by Friday.
+
+Alright, let's move to budget. Marketing wants to shift 50k from content marketing to paid ads. Mike, can you justify that?
+
+Mike: Yeah, our content ROI has been dropping for two quarters. Paid social is giving us 3x better conversion right now. I've got the numbers in a deck, I'll share it after the meeting.
+
+Sounds reasonable but I want to see the data first. Share the deck and we'll decide by next Monday. Anyone opposed? ... OK moving on.
+
+Last item — new hire onboarding. HR says the current process takes 3 weeks and new engineers are complaining it's too slow. Linda, you mentioned you had some ideas?
+
+Linda: Right, I think we can cut it to one week if we pre-configure dev environments and assign a buddy on day one. I need to coordinate with IT on the env setup and with engineering managers on the buddy assignments.
+
+Good. Linda, draft a proposal by end of week. And Sarah, since you went through onboarding recently, can you give Linda feedback on what worked and what didn't?
+
+Sarah: Sure, I'll send her some notes.
+
+Great, that's it for today. Thanks everyone.

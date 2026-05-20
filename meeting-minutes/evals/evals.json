@@ -1,0 +1,86 @@
+{
+  "skill_name": "meeting-minutes",
+  "evals": [
+    {
+      "id": 0,
+      "name": "decision-meeting-stt",
+      "prompt": "帮我整理一下今天下午的产品讨论会的会议记录，这是录音转的文字稿，比较乱，你帮我理一理",
+      "expected_output": "一份完整的产品发布计划讨论会的会议纪要，包含3个议题：产品发布计划、市场推广预算、团队人员补充。包含隐式待办提取和风险标注。",
+      "files": ["evals/files/eval-0-input.txt"],
+      "expectations": [
+        "正确识别会议类型为'决策会'或类似标识",
+        "将内容正确归并为3个议题：产品发布计划、市场预算、团队补充",
+        "提取出至少4条待办事项",
+        "至少包含1条隐式提取的待办（如'我回头问问'、'你推荐一下'等表述）",
+        "待办清单包含'来源'列，指向对应的议题",
+        "对缺失的会议基础信息（时间、地点等）标注'待补充'",
+        "输出格式严格遵循模板结构（基本信息、议题讨论、待办清单、风险与关注项）",
+        "文件保存到 meeting-minutes/ 目录下"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "status-sync-draft",
+      "prompt": "这是我们的项目周会记录，帮我整理成正式的会议纪要",
+      "expected_output": "一份项目周进度同步会的会议纪要，包含4位成员的进度汇报、blocker和待办事项。",
+      "files": ["evals/files/eval-1-input.txt"],
+      "expectations": [
+        "正确识别会议类型为'同步会'或类似标识",
+        "按议题（而非按发言人）组织内容：登录模块、支付模块、通知模块、测试",
+        "正确提取支付模块退款问题为关键风险",
+        "正确提取测试环境对齐问题为待办",
+        "提取至少5条待办事项",
+        "待办包含责任人、来源议题",
+        "输出格式符合模板结构"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "brainstorming-notes",
+      "prompt": "帮我把下午的产品头脑风暴会的笔记整理成纪要，这些是会上记的要点",
+      "expected_output": "一份产品头脑风暴会的会议纪要，包含4个讨论的功能方向、优先级排序和待办事项。",
+      "files": ["evals/files/eval-2-input.txt"],
+      "expectations": [
+        "正确识别会议类型为'头脑风暴'或类似标识",
+        "按功能方向归并为独立议题：AI摘要+脑图、知识库、团队空间、阅读统计",
+        "每个议题包含讨论摘要和状态标记",
+        "保留优先级排序信息",
+        "提取4条待办事项（李明、郭瑞、许薇、林芳各一条）",
+        "对'团队空间'等高投入方向标注风险或关注",
+        "输出格式符合模板结构"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "ultra-short-input",
+      "prompt": "帮我把这个整理成会议纪要",
+      "expected_output": "一份简化版会议纪要，不强行拆分多议题，标注信息量不足。",
+      "files": ["evals/files/eval-3-input.txt"],
+      "expectations": [
+        "不强行拆分多议题，将内容归入单一议题或简化结构",
+        "基本信息中标注缺失项为'待补充'",
+        "在备注或纪要中标注'信息量不足'、'尽力提取'或类似提示",
+        "待办清单包含登录性能检查和报表导出两项（或标注仅能提取有限待办）",
+        "输出长度控制在500字以内",
+        "不编造原文未提及的信息",
+        "会议类型标注为'同步会'或类似简短沟通类型"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "all-english-input",
+      "prompt": "Can you help me organize this meeting transcript into minutes?",
+      "expected_output": "An English meeting minutes document covering Q2 launch, budget reallocation, and onboarding.",
+      "files": ["evals/files/eval-4-input.txt"],
+      "expectations": [
+        "输出语言为英文，模板字段使用英文标签",
+        "正确归并为3个议题：Q2 Launch Timeline、Budget Reallocation、New Hire Onboarding",
+        "识别为决策会（含明确的决策动作：commit to May 30th、decide by next Monday、draft proposal）",
+        "提取至少5条待办，含责任人和截止时间",
+        "Sarah的'i'll push the team but no promises'被识别为带不确定性的待办",
+        "Mike的'share the deck after the meeting'被识别为显式待办",
+        "输出格式保持模板结构（基本信息、议题讨论、待办清单、风险与关注项）"
+      ]
+    }
+  ]
+}
